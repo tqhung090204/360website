@@ -1,26 +1,276 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Thanh chọn tầng dạng carousel ảnh tròn */
+.floor-switcher-bar {
+  position: absolute;
+  bottom: 2cm;
+  left: 2cm;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 4cm);
+  background: rgba(222, 220, 220, 0.32);
+  border-radius: 16px;
+  padding: 14px 16px;
+  backdrop-filter: blur(4px);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Nút tròn thu gọn/mở rộng, luôn đứng yên bên trái */
+.floor-switcher-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #ffffff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.floor-switcher-toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Khối chứa ảnh tầng - sẽ co về 0 khi bấm thu gọn */
+.floor-switcher-content {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  max-width: 1200px;
+  opacity: 1;
+  transition: max-width 0.3s ease, opacity 0.25s ease;
+}
+
+.floor-switcher-collapsed .floor-switcher-content {
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.floor-switcher-track {
+  display: flex;
+  gap: 22px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 0 8px;
+  flex: 1;
+  scrollbar-width: none; /* Firefox */
+}
+.floor-switcher-track::-webkit-scrollbar {
+  display: none; /* Chrome/Edge */
+}
+
+.floor-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 76px;
+}
+
+.floor-thumb-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.floor-item:hover .floor-thumb-wrap {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.floor-item-active .floor-thumb-wrap {
+  border-color: #22d3ee;
+  transform: scale(1.08);
+}
+
+.floor-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.floor-label {
+  font-size: 13px;
+  color: #ffffff;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.floor-item-active .floor-label {
+  color: #22d3ee;
+  font-weight: 600;
+}
+
+/* Marker hotspot - vòng tròn chứa mũi tên, có hiệu ứng lan tỏa */
+.hotspot-marker {
+  width: 44px;
+  height: 44px;
+  position: relative;
+  cursor: pointer;
+}
+
+.hotspot-circle {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.hotspot-pulse {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.6);
+  animation: hotspot-pulse-anim 1.8s ease-out infinite;
+  z-index: 1;
+}
+
+@keyframes hotspot-pulse-anim {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Tooltip có ảnh xem trước khi rê chuột vào hotspot */
+.psv-tooltip .hotspot-preview img {
+  width: 160px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+  margin-bottom: 6px;
+}
+.psv-tooltip .hotspot-preview .hotspot-label {
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Marker hotspot - vòng tròn chứa mũi tên, có hiệu ứng lan tỏa */
+.hotspot-marker {
+  width: 44px;
+  height: 44px;
+  position: relative;
+  cursor: pointer;
+}
+
+.hotspot-circle {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.hotspot-pulse {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.6);
+  animation: hotspot-pulse-anim 1.8s ease-out infinite;
+  z-index: 1;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+@keyframes hotspot-pulse-anim {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* Khi rê chuột vào marker: icon mờ dần đi, thay bằng ảnh + nhãn phồng lên phía trên */
+.hotspot-marker:hover .hotspot-circle,
+.hotspot-marker:hover .hotspot-pulse {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+.hotspot-photo-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: 56px; /* trồi lên phía trên vị trí gốc của marker */
+  transform: translateX(-50%) scale(0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 3;
+}
+
+.hotspot-marker:hover .hotspot-photo-wrap {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+  pointer-events: auto;
+}
+
+.hotspot-label {
+  background: #2dd4bf;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.hotspot-photo {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.hotspot-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
