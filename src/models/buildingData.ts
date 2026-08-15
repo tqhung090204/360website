@@ -15,6 +15,7 @@ export const myBuilding: Building = {
           floorId: "outdoor_0",
           name: "Ngoài trời",
           imageUrl: "/panoramas/outdoor/outdoor.jpg",
+          entryYaw: 241,
           horizontalRange: [189, 39],
           hotspots: [
             {
@@ -45,7 +46,7 @@ export const myBuilding: Building = {
           floorId: "tang0",
           name: "Ngoài sân",
           imageUrl: "/panoramas/tang0/tang0.jpg",
-          horizontalRange: [326, 152],
+          horizontalRange: [255, 152],
           entryYaw: 61,   // góc ngang mong muốn
           hotspots: [
             {
