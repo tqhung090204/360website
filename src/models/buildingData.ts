@@ -46,6 +46,7 @@ export const myBuilding: Building = {
           name: "Ngoài sân",
           imageUrl: "/panoramas/tang0/tang0.jpg",
           horizontalRange: [326, 152],
+          entryYaw: 61,   // góc ngang mong muốn
           hotspots: [
             {
               id: "hs-2",
@@ -82,6 +83,7 @@ export const myBuilding: Building = {
           floorId: "tang1",
           name: "tầng 1",
           imageUrl: "/panoramas/tang1/tang1.jpg",
+          entryYaw: 271,   // góc ngang mong muốn
           horizontalRange: [183, 168],
           hotspots: [
             {
@@ -120,6 +122,7 @@ export const myBuilding: Building = {
           name: "Phòng 101",
           imageUrl: "/panoramas/tang1/room101.jpg",
           horizontalRange: [191, 132],
+          entryYaw: 262, 
           hotspots: [
             {
               id: "hs-7",
@@ -146,6 +149,7 @@ export const myBuilding: Building = {
           name: "tầng 2",
           imageUrl: "/panoramas/tang2/tang2.jpg",
           horizontalRange: [190, 159],
+          entryYaw: 78,
           hotspots: [
             {
               id: "hs-8",
@@ -183,6 +187,7 @@ export const myBuilding: Building = {
           name: "Phòng nhân viên",
           imageUrl: "/panoramas/tang2/room201.jpg",
           horizontalRange: [188, 171],
+          entryYaw: 345,
           hotspots: [
             {
               id: "hs-11",
@@ -209,6 +214,7 @@ export const myBuilding: Building = {
       name: "Sảnh tầng 3",
       imageUrl: "/panoramas/tang3/tang3.jpg",
       horizontalRange: [193, 177],
+      entryYaw: 88,
       hotspots: [
         {
           id: "hs-301-from-sanh",
@@ -254,6 +260,7 @@ export const myBuilding: Building = {
       name: "Phòng sếp ",
       imageUrl: "/panoramas/tang3/room301.jpg",
       horizontalRange: [227, 212],
+      entryYaw: 39,
       hotspots: [
         {
           id: "hs-302-from-301",
@@ -281,6 +288,7 @@ export const myBuilding: Building = {
       name: "Phòng 302",
       imageUrl: "/panoramas/tang3/room302.jpg",
       horizontalRange: [187, 168],
+      entryYaw: 317,
       hotspots: [
         {
           id: "hs-301-from-302",
@@ -299,6 +307,7 @@ export const myBuilding: Building = {
       name: "Phòng 303",
       imageUrl: "/panoramas/tang3/room303.jpg",
       horizontalRange: [184, 155],
+      entryYaw: 76,
       hotspots: [
         {
           id: "hs-sanh-from-303",
@@ -325,6 +334,7 @@ export const myBuilding: Building = {
       name: "Sảnh tầng 4",
       imageUrl: "/panoramas/tang4/tang4.jpg",
       horizontalRange: [198, 134],
+      entryYaw: 20,
       hotspots: [
         {
           id: "hs-401-from-sanh",
@@ -352,6 +362,7 @@ export const myBuilding: Building = {
       name: "Phòng họp",
       imageUrl: "/panoramas/tang4/room401.jpg",
       horizontalRange: [188, 171],
+      entryYaw: 350,
       hotspots: [
         {
           id: "hs-sanh-from-401",

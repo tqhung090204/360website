@@ -22,17 +22,21 @@ const MIN_FOV = 30; // giữ nguyên mặc định, cho phép zoom gần tối �
 export default function PanoramaViewer({ scene, onHotspotClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
-  // Lưu lại góc (yaw/pitch) của hotspot vừa được bấm, để biết hướng "đi vào" khi chuyển cảnh
-  const clickedHotspotRef = useRef<{ yaw: number; pitch: number } | null>(null);
 
   // Effect 1: chỉ tạo Viewer đúng 1 lần khi component mount
   useEffect(() => {
     if (!containerRef.current) return;
     let isCancelled = false;
 
+    // Ưu tiên entryYaw/entryPitch nếu bạn tự khai báo cho scene này;
+    // không có thì mới tự tính điểm giữa horizontalRange (tránh bị kéo giật); không có nữa thì mặc định 0
+    const initialPosition = getEntryPosition(scene);
+
     const viewer = new Viewer({
       container: containerRef.current,
       panorama: scene.imageUrl,
+      defaultYaw: `${initialPosition.yaw}deg`,
+      defaultPitch: `${initialPosition.pitch}deg`,
       plugins: [
         [MarkersPlugin, {}],
         [
@@ -40,7 +44,7 @@ export default function PanoramaViewer({ scene, onHotspotClick }: Props) {
           {
             autostartDelay: 0, // bắt đầu xoay ngay khi ảnh vừa load xong, không cần chờ
             autostartOnIdle: true, // nếu người dùng kéo xem rồi ngừng thao tác, sẽ tự xoay lại
-            autorotateSpeed: "0.5rpm", // tốc độ: 2 vòng/phút, di chuyển chậm rãi. Đổi thành số âm ví dụ "-2rpm" nếu muốn đảo chiều
+            autorotateSpeed: "0.7rpm", // tốc độ: 2 vòng/phút, di chuyển chậm rãi. Đổi thành số âm ví dụ "-2rpm" nếu muốn đảo chiều
           },
         ],
         [
@@ -58,13 +62,6 @@ export default function PanoramaViewer({ scene, onHotspotClick }: Props) {
       defaultZoomLvl: 0, // 0 tương ứng đúng maxFov -> ảnh mở lên đã ở đúng mức zoom giới hạn, không bị hở khoảng đen
     });
 
-    viewer.addEventListener("ready", () => {
-      if (isCancelled) return; // tránh set state/marker khi component đã unmount (Strict Mode)
-      viewerRef.current = viewer;
-      renderMarkers(viewer, scene, onHotspotClick, clickedHotspotRef);
-      applyHorizontalRange(viewer, scene);
-    });
-
     viewer.addEventListener("click", (e: any) => {
   const yawDeg = e.data.yaw * 180 / Math.PI;
   const pitchDeg = e.data.pitch * 180 / Math.PI;
@@ -74,6 +71,13 @@ export default function PanoramaViewer({ scene, onHotspotClick }: Props) {
   console.log("pitch:", pitchDeg);
   console.log("==============================");
 });
+
+    viewer.addEventListener("ready", () => {
+      if (isCancelled) return; // tránh set state/marker khi component đã unmount (Strict Mode)
+      viewerRef.current = viewer;
+      renderMarkers(viewer, scene, onHotspotClick);
+      applyHorizontalRange(viewer, scene);
+    });
 
     viewer.addEventListener("panorama-error", (e: any) => {
       console.error("Không tải được ảnh panorama:", scene.imageUrl, e);
@@ -87,49 +91,37 @@ export default function PanoramaViewer({ scene, onHotspotClick }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // chỉ chạy 1 lần, KHÔNG phụ thuộc scene
 
-  // Effect 2: khi scene thay đổi (người dùng bấm hotspot / đổi tầng) -> đổi ảnh, kèm hiệu ứng "đi vào" hotspot
+  // Effect 2: khi scene thay đổi (người dùng bấm hotspot / đổi tầng) -> đổi ảnh mượt mà
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer) return; // Viewer chưa sẵn sàng (đang ở lần mount đầu) -> bỏ qua, Effect 1 đã set panorama ban đầu rồi
 
-    // Nếu scene này được mở ra do vừa bấm 1 hotspot, ta biết chính xác góc của hotspot đó
-    const walkInAngle = clickedHotspotRef.current;
-    clickedHotspotRef.current = null; // dùng xong thì xoá, tránh ảnh hưởng lần đổi cảnh tiếp theo (ví dụ đổi bằng FloorSwitcher)
+    // Ưu tiên entryYaw/entryPitch nếu bạn tự khai báo cho scene này;
+    // không có thì mới tự tính điểm giữa horizontalRange (tránh bị kéo giật); không có nữa thì mặc định 0
+    const entryPosition = getEntryPosition(scene);
 
-    // Cảnh mới sẽ mở ra ở đúng góc ngoài cùng bên trái của chính nó (dựa theo horizontalRange đã khai báo).
-    const startYaw = scene.horizontalRange ? scene.horizontalRange[0] : 0;
+    // QUAN TRỌNG: gỡ tạm giới hạn horizontalRange của scene CŨ trước khi đổi cảnh.
+    // Vì transition mặc định có "rotation: true" (camera tự xoay sang góc mới trong lúc mờ dần ảnh),
+    // nếu vẫn còn bị khóa theo phạm vi của scene cũ thì camera có thể bị kẹt lại giữa chừng,
+    // không xoay hết được tới entryYaw của scene mới -> đây là nguyên nhân gây ra hiện tượng "lúc được lúc không".
+    const visibleRangePlugin = viewer.getPlugin(VisibleRangePlugin) as VisibleRangePlugin;
+    visibleRangePlugin?.setHorizontalRange(null);
 
-    const runTransition = async () => {
-      if (walkInAngle) {
-        // Bước 1: xoay mặt thẳng vào đúng điểm hotspot vừa bấm rồi zoom sát vào đó -> cảm giác đang tiến tới gần
-        await viewer.animate({
-          yaw: `${walkInAngle.yaw}deg`,
-          pitch: `${walkInAngle.pitch}deg`,
-          zoom: 90,
-          speed: 500,
-        });
-      }
-
-      // Bước 2: đổi ảnh. Nếu vừa "đi vào" thì giữ nguyên độ zoom gần đó luôn (như vừa bước qua cửa),
-      // nếu đổi cảnh theo cách khác (ví dụ bấm FloorSwitcher) thì mở bình thường ở mức zoom mặc định.
-      await viewer.setPanorama(scene.imageUrl, {
-        position: { yaw: `${startYaw}deg`, pitch: "0deg" },
-        zoom: walkInAngle ? 90 : 0,
-      });
-
-      renderMarkers(viewer, scene, onHotspotClick, clickedHotspotRef);
-      applyHorizontalRange(viewer, scene);
-
-      if (walkInAngle) {
-        // Bước 3: nhả zoom ra mức bình thường để lộ toàn cảnh phòng vừa "bước vào"
-        await viewer.animate({ zoom: 0, speed: 500 });
-      }
-
-      const autorotatePlugin = viewer.getPlugin(AutorotatePlugin) as AutorotatePlugin;
-      autorotatePlugin?.start();
-    };
-
-    runTransition().catch((err) => console.error("Lỗi khi đổi panorama:", err));
+    viewer
+      .setPanorama(scene.imageUrl, {
+        zoom: 0, // giữ nguyên mức zoom giới hạn khi chuyển sang scene mới
+        position: { yaw: `${entryPosition.yaw}deg`, pitch: `${entryPosition.pitch}deg` },
+        // Không cấu hình gì thêm -> dùng đúng hiệu ứng crossfade mượt mặc định của thư viện
+      })
+      .then(() => {
+        renderMarkers(viewer, scene, onHotspotClick);
+        // Chỉ khóa lại đúng phạm vi của scene MỚI sau khi camera đã ổn định đúng vị trí
+        applyHorizontalRange(viewer, scene);
+        // Đổi scene xong thì chủ động xoay lại luôn, không chờ autostartOnIdle kích hoạt
+        const autorotatePlugin = viewer.getPlugin(AutorotatePlugin) as AutorotatePlugin;
+        autorotatePlugin?.start();
+      })
+      .catch((err) => console.error("Lỗi khi đổi panorama:", err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene.id]);
 
@@ -152,6 +144,18 @@ function applyHorizontalRange(viewer: Viewer, scene: Scene) {
   } else {
     visibleRangePlugin.setHorizontalRange(null); // ảnh đủ 360° -> không giới hạn
   }
+}
+
+// Tính góc camera sẽ hướng tới khi mở 1 scene:
+// 1) Ưu tiên entryYaw/entryPitch nếu bạn tự khai báo cho scene đó
+// 2) Không có thì lấy điểm giữa horizontalRange (tránh bị VisibleRangePlugin kéo giật)
+// 3) Không có gì cả thì mặc định 0, 0
+function getEntryPosition(scene: Scene): { yaw: number; pitch: number } {
+  const yaw =
+    scene.entryYaw ??
+    (scene.horizontalRange ? (scene.horizontalRange[0] + scene.horizontalRange[1]) / 2 : 0);
+  const pitch = scene.entryPitch ?? 0;
+  return { yaw, pitch };
 }
 
 // Trả về SVG tương ứng với loại icon của hotspot
@@ -182,8 +186,7 @@ function getHotspotIcon(icon: Hotspot["icon"]): string {
 function renderMarkers(
   viewer: Viewer,
   scene: Scene,
-  onHotspotClick: (targetSceneId: string) => void,
-  clickedHotspotRef: { current: { yaw: number; pitch: number } | null }
+  onHotspotClick: (targetSceneId: string) => void
 ) {
   const markersPlugin = viewer.getPlugin(MarkersPlugin) as MarkersPlugin;
   markersPlugin.clearMarkers();
@@ -219,16 +222,7 @@ function renderMarkers(
   markersPlugin.removeEventListener("select-marker", undefined as any); // phòng trùng listener
   markersPlugin.addEventListener("select-marker", (e: any) => {
     const targetId = e.marker.data?.targetSceneId;
-    if (!targetId) return;
-
-    // Tìm lại đúng hotspot vừa bấm (theo id marker) để lấy góc yaw/pitch của nó,
-    // lưu vào ref -> Effect 2 sẽ đọc ref này để biết hướng "đi vào"
-    const clickedHotspot = scene.hotspots.find((h) => h.id === e.marker.id);
-    clickedHotspotRef.current = clickedHotspot
-      ? { yaw: clickedHotspot.yaw, pitch: clickedHotspot.pitch }
-      : null;
-
-    onHotspotClick(targetId);
+    if (targetId) onHotspotClick(targetId);
   });
 
   // Rê chuột vào hotspot (đang xem ảnh preview) -> tạm dừng xoay tự động cho khách xem yên

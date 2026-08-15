@@ -17,6 +17,8 @@ export interface Scene {
   imageUrl: string;     // đường dẫn ảnh trong /public
   hotspots: Hotspot[];
   horizontalRange?: [number, number]; // [góc trái, góc phải] tính bằng độ, khóa không cho xoay quá 2 điểm này. Để trống nếu ảnh đủ 360°, xoay tự do
+  entryYaw?: number;   // góc ngang (độ) camera sẽ hướng tới ngay khi mở scene này. Không khai báo thì tự lấy giữa horizontalRange (hoặc 0 nếu không có)
+  entryPitch?: number; // góc dọc (độ), mặc định 0 nếu không khai báo
 }
 
 // Một tầng gồm nhiều scene
